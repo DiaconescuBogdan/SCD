@@ -1,0 +1,110 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[options ]{algorithm2e}
+\usepackage{algorithmic}
+\usepackage{algorithm}
+
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{graphicx}
+\usepackage[colorinlistoftodos]{todonotes}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+\title{Critical Sections Lab Assignment}
+\author{Diaconescu Bogdan-Florin\\ CR 3.2 A, Anul 3}
+\date{November 2019}
+
+\begin{document}
+
+\maketitle
+
+\section{Problem statement}
+\hspace{0.5 cm}
+Implementarea algoritmului lui Dekker in Promela utilizand 2 procese.
+
+\section{Implementation/Solution}
+\hspace{0.5 cm}
+Am creat un array "flags" ale carui elemente le-am initializat la inceput cu false si care vor fi utilizare de ambele procese.
+Variabila "count" este folosita pentru a verifica daca algoritmul rezolva problema excluderii mutuale. Aceasta variabila indica numarul procesului care se afla in sectiunea critica.Atunci cand un proces intra in sectiunea critica, se incrementeaza valoarea lui "count" si se decrementeaza la iesirea procesului din sectiunea critica.
+
+\hspace{0.5 cm}
+La linia 5 sunt create 2 procese prin folosirea sintaxei "active [2] proctype". Numerotarea proceselor se face incepand de la 0. La linia 8 am utilizat 2 variabile i si j de tipul "\textunderscore pid" care retin numar de identificare al proceselor. Ambele variabile sunt declarate local in interirorul fiecarui proces.
+
+\hspace{0.5 cm}
+Cand un proces ajunge la linia 19, acesta nu va trece mai departe pana cand nu este indeplinita conditia respectiva. De asemnea, pentru a evita blocarea programului in bucla "do" sau "if", am explicat ce trebuie sa faca aceasta in cazul in care o conditie nu este indeplinita(linia 21 si linia 23). Instructiunea "skip" indica faptul ca, in cazul in care nu este indeplinita conditia initiala se trece mai departe, pe cand instructiunea "break" este folosita pentru a iesi din bucla "do".
+
+\begin{algorithm} 
+\caption{}
+\begin{algorithmic}[1]
+
+\STATE $flag[2] \gets false$
+\STATE $turn \gets false$
+\STATE $count \gets 0$
+\Function{active proctype mutex}{()}
+\STATE $\textunderscore pid i \gets \textunderscore pid$
+\STATE $\textunderscore pid j \gets 1 - \textunderscore pid$
+\STATE infinite loop
+\STATE $flag[i] \gets true$
+\WHILE{flag[j] == true} 
+\IF{turn == j}
+\STATE $flag[i] \gets false$
+\STATE $(turn != j)$
+\ELSE skip
+\ENDIF
+\STATE $break$
+\ENDWHILE
+\STATE $count++$
+\STATE $ASSERT(count == 1)$
+\STATE $count--$
+\STATE $turn \gets j$
+\STATE $flag[i] \gets false$
+\STATE goto again
+\endFunction
+\end{algorithmic}
+\end{algorithm}
+
+\section{Experimental data}
+\hspace{0.5 cm}
+Algoritmul lui Dekker rezolva problema sectiunii critice. Acesta permite ca 2 procese sa utilizeze resurse comune fara sa existe conflict intre ele. Mai jos am explicat algoritmul intr-un mod cat mai simplu.
+
+\begin{algorithm} 
+\caption{}
+\begin{algorithmic}[1]
+\STATE $flag[0] \gets true$ \tcp{"I want to enter."}
+\WHILE{flag[1] == true} 
+\tcp{"If you want to enter}
+\newline
+\IF{turn!=0}
+\tcp{and if it's your turn}
+\STATE $flag[0] \gets false$
+\tcp{I don't want to enter any more." }
+\WHILE{turn != 0}
+\tcp{"If it's your turn   }
+\ENDWHILE
+\tcp{I'll wait." }
+\STATE $flag[0] \gets true$
+\tcp{"I want to enter." }
+\ENDIF
+\ENDWHILE
+\STATE Enter CS!
+\tcp{CS}
+\STATE$turn \gets 0$
+\tcp{ "You can enter next."}
+\STATE$flag[0] \gets false$
+\tcp{"I don't want to enter any more." }
+
+\end{algorithmic}
+\end{algorithm}
+
+\section{Results \& Conclusions}
+\hspace{0.5 cm}
+Am implementat algoritmul lui Dekker in Promela, rezolvand problema excluderii mutuale. Daca un proces vrea sa intre in sectiunea critica, acesta va astepta pana cand ii vine randul si pana cand celalalt proces a iesit din zona critica.
+
+
+
+
+
+\end{document}
