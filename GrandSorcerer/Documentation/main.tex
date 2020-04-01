@@ -1,0 +1,269 @@
+\documentclass{article}
+%% \usepackage{times}
+
+\usepackage{float}
+\usepackage{latexsym}
+\usepackage{url}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true}
+\usepackage{enumitem,amssymb}
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+\newlist{todolist}{itemize}{4}
+\setlist[todolist]{label=$\square$}
+\begin{document}
+
+\begin{titlepage}
+	\centering
+	\vspace{4cm}
+	{\huge\bfseries\LARGE Marele vrăjitor - Salvează lumea \par}
+	\vspace{2cm}
+	{\Large Diaconescu Bogdan Florin\par}
+	\vspace{1cm}
+	{\Large CR 3.2A\par}
+	\vspace{1cm}
+	\vfill
+
+\end{titlepage}
+
+
+\begin{centering}
+\vspace{1cm}
+{\scshape\Large Technical report \par}
+\end{centering}
+\vspace{1.5cm}
+% sections
+
+\section{Structura aplicatiei}
+
+    Pentru rezolvarea problemei am creat urmatoarele clase:
+        \begin{itemize}
+        \item \textbf{Demon}: reprezinta un demon implementat ca si un thread.
+        \vspace{0.5cm}
+         \begin{itemize}
+        \item Fiecare demon este identificat prin intermediul variabilei \textit{number}. 
+        \item Un demon este reprezentat in interiroul unui cuib printr-o pereche de coordonate ( X, Y). 
+        \item Fiecare demon are un nivel de abilitati sociale care poate fi crescut sau scazut si este reprezentat prin variabila  \textit{socialLevel}.
+        \item Pentru contorizarea loviturilor am folosit o variabila contor \textit{hits} .  
+        \item Am utilizat un flag \textit{hitsFlag} pentru cazul in care un demon se loveste de zid si este pus sa astepte 2 ture.
+        \item Fiecare demon contine o instanta \textit{coven} a cuibului in care se afla .
+        \item Metoda \textit{run} - demonul va executa la infinit urmatoarele actiuni:
+                \begin{itemize}
+                    \item crearea unui ingredient
+                    \item miscarea in interiorul cuibului
+                    \item odihna pentru 30 milisecunde
+                    \item retragerea din cuib
+                \end{itemize}
+            \item Metoda \textit{changePosition} - schimba coordonatele demonului in timpul miscarii in cuib.
+            \item Metoda \textit{stopWork} - il face pe demon sa se opreasca pentru un timp cuprins intre 10 si 50 de milisecunde.
+            \item Metoda \textit{reportPosition} - afiseaza pozitia curenta a demonului in cuib.
+            \end{itemize}
+        \item \textbf{DemonRetirement} - reprezinta un thread utilizat pentru retragerea unui demon. La fiecare 50 de milisecunde se cere permisunea semaforului \textit{demonRetireSemaphore} si daca se primeste se retrage un demon.
+            
+        \item \textbf{DemonSpawner} - reprezinta un thread folosit pentru crearea demonilor in fiecare cuib. Clasa contine o variabila \textit{coven} ce indica cuibul in care vor fi creati demonii, dupa care se apeleaza functia \textit{sleep()}, ce adoarme threadul pentru o perioada cuprinsa intre 500 si 1000 de milisecunde.
+            \begin{itemize}
+                   \item Metoda \textit{spawnAnElf}:
+                    \begin{itemize}
+                        \item primeste zavorul pentru cuib si-l blocheaza
+                        \item verifica daca numarul demonilor este mai mic decat N/2, caz in care ceaaza un nou demon
+                        \item blocheaza zavorul pentru lista demonilor pentru ca numarul demonilor sa nu poata fi modificat
+                        \item adauga demonul in cuib si creste numarul acestora
+                        \item elibereaza zavorul pentru contorul demonilor
+                        \item elibereaza zavorul pentru matricea cuibului
+                
+                    \end{itemize}
+            \end{itemize}
+            
+        \item \textbf{Witch} -  clasa ce reprezinta o vrajitoare prin intermediul unui thread.
+            \begin{itemize}
+                \item Fiecare vrajitoare este identificata prin intermediul variabilei \textit{number}.
+                \item O vrajitoare poate citi intotdeauna numarul de ingrediente din cuiburi, de aceea este nevoie de un vector \textit{covens} ce contine toate cuiburile.
+                \item \textit{potionQueue} reprezinta coada in care vrajitoarele vor pune potiunile.
+                \item Vrajitaorele creeaza potiunile in functie de retete, de aceea este nevoie de un ArrayList \textit{potionList} ce contine retele stiute.
+                \item Ingredientele detinute de o vrajitoare sunt stocate in vectorul \textit{availableIngredients}. Deoarece exista 10 tipuri de ingrediente, acestea vor fi sortate in vector astfel: pe pozitia 0 va fi ingredientul 0, pe pozitia 1 ingredientul 1 samd.
+                \item Potiunile sunt create prin intermediul functiei \textit{makePotion}. Pentru ficare reteta se verifica daca aceasta se poate face cu ingredientele disponibile prin intermediul functiei \textit{checkReceipt} din clasa \textit{PotionReceipt}.
+                \item \textit{run} -  threadul va executa la infinit urmatoarele actiuni:
+                    \begin{itemize}
+                        \item primeste un ingredient din cuib pe care il pune in vectorul \textit{newIngredients}
+                        \item ingredientele noi sunt puse apoi in vectorul \textit{availableIngredients} in functie de tipul lor.
+                        \item este creata potiunea prin intermediul functiei \textit{makePotion}
+                        \item potiunea este trimisa Marelui Vrajitor prin intermediul cozii \textit{potionQueue}
+                        \item este oprit threadul pentru o perioada cuprinsa intre 10 si 30 de milisecunde.
+                    \end{itemize}
+                \item \textit{getIngredientFromCoven} - intra intr-un cuib la intamplare si ia un ingredient
+            \end{itemize}
+            
+        \item \textbf{PotionTransfer} - clasa ce reprezinta o coada prin intermediul careia se realizeaza transferul potiunilor de la vrajitoare catre Marele Vrajitor.
+            \begin{itemize}
+            \item Contine 2 variabile \textit{head} si \textit{tail} ce reprezinta capul si coada cozii.
+            \item De asemnea, contine si un vector \textit{potions} de tipul int cu dimensiunea 10 pentru stocarea potiunilor.
+            \item Potiunile sunt introduse in coada de catre vrajitoare prin functia \item \textit{giveGift} si sunt primite de Marele Vrajitor prin intermediul functiei \item \textit{receiveGift}.
+            
+            \end{itemize}
+        \item \textbf{PotionReceipt} - clasa ce reprezinta o reteta de potiuni.
+        \begin{itemize}
+            \item Fiecare potiune este identificata prin variabila \textit{number}.
+            \item Ingredientele necesare pentru crearea potiunii sunt stocate intr-un ArrayList \textit{necessaryIngredients}.
+            \item Fiecare reteta necesita un timp \textit{time} pentru a fi creata.
+            \item Tipul de ingrediente necesare, precum si timpul sunt generate in mod random in interiorul constructorului.
+            \item Cu metoda \textit{checkReceipt int[] availableIngredients} se parcurge vectorul de ingrediente necesare si se verfica daca acestea se gasesc in vectorul \textit{availableIngredients} dat ca si parametru functiei. Functia returneaza \textit{true} in cazul in care potiunea se poate crea, respectiv \textit{false} in caz contrat.
+          \end{itemize}
+        \item \textbf{MainClass} - contine metoda main:
+            \begin{itemize}
+                \item \textit{main} :
+                \begin{itemize}
+                    \item crearea cozii \textit{potionQueue}
+                    \item crearea Marelui Vrajitor
+                    \item crarea Cercului Marelui Vrajitor
+                    \item Cercului Marelui Vrajitor incepe crearea cuiburilor
+                    \item Marele Vrajitor primeste potiuni de la vrajitoare
+                \end{itemize}
+            \end{itemize}
+            
+        \item \textbf{Grand Sorcerer} - reprezinta Marele Vrajitor si extinde clasa \textit{Thread}.
+            \begin{itemize}
+                \item Contine o instanta a clasei PotionTransfer, \textit{giftQueue} utilizata pentru primirea potiunilor
+                \item Marele Vrajitor va primi incontinuu potiuni
+                    
+            \end{itemize}
+        \item \textbf{Zombie} - clasa ce reprezinta un strigoi prin intermediul unui thread.
+         \begin{itemize}
+            \item Fiecare zombie este identificat prin variabila \textit{number}.
+             \item Un zombie poate ataca orice cuib de aceea este nevoie de un vector \textit{covens[]}.
+              \item Metoda \textit{run} - strigoiul va executa la infinit urmatoarele actiuni:
+              \begin{itemize}
+                \item genereaza un numar random \textit{covenNumber} ce reprezinta cuibul atacat.
+                \item genereaza un numar random \textit{demonKillNumber} intre 5 si 10 ce reprezinta numarul de demoni ce vor fi omorati.
+                \item daca numarul demonilor din cuibul ales random este mai mare de 5 se apeleaza functia \textit{killDemon()}.
+                \item se asteapta un numar de secunde cuprins intre 500 si 1000 de secunde.
+              
+              
+               \end{itemize}
+              \end{itemize}
+        \item \textbf{Coven} - clasa ce reprezinta cuibul prin intermediul unui thread.
+            \begin{itemize}
+                \item \textit{number} - numarul prin care este identificat cuibul
+                \item \textit{N} - dimensiunea matricei cuibului
+                \item \textit{demons} - ArrayList ce contine demonii existenti in cuib
+                \item \textit{ingredients} - vector de tip int ce contine ingredientele existente in cuib
+                \item \textit{covenLock} -  zavor folosit pentru accesul la matricea cuibului
+                \item \textit{demonsListLock} - zavor folosit pentru accesul la lista de demoni
+                \item \textit{witchSemaphore} - semafor pentru numarul maxim de vrajitoare dintr-un cuib(10)
+                \item \textit{ingredientsLock} - zavor pentru accesul la lista de ingrediente
+                \item \textit{zombieSemaphore} - semafor pentru numarul maxim de strigoi ce pot ataca un cuib(am considerat numarul maxim 10 la fel ca la vrajitoare)
+                \item \textit{run} - threadul va executa la infinit urmatoarele actiuni
+                    \begin{itemize}
+                        \item cere tuturor demonilor sa raporteze pozitia 
+                        \item se apeleaza functia slepp pentru 3000 milisecunde
+                    \end{itemize}
+                \item \textit{moveDemon} - muta un demon in cuib:
+                    \begin{itemize}
+                        \item blocheaza zavorul \textit{covenLock} pentru matricea cuibului 
+                        \item incearca sa mute un demon in orice directie, in caz contrat acesta este blocat
+                        \item mutarea in orice directie presupune schimbarea coordonatelor in matrice,  crearea unui ingredient (daca este indeplinita conditia \textit{hitsFlag == 0}, adica daca demonul nu s-a lovit de zic si nu trebuie sa astepte 2 ture), cresterea nivelului social al demonului(daca sunt indeplinite conditiile), modificarea pozitiei curente a demonului si raportarea pozitiei tuturor demonilor
+                        \item deblocarea zavorului pentru matricea cuibului
+                    \end{itemize}
+                \item Prin intermediul metodelor \textit{canMoveUp}, \textit{canMoveDown}, \textit{canMoveRight}, \textit{canMoveLeft} sunt verificate mutarile posibile ale unui demon
+                \item \textit{addDemon} - adauga un nou demon in cuib:
+                    \begin{itemize}
+                        \item blocheza zavorul listei de demoni
+                        \item daca nu exista deja un demon in pozitia generata random, se adauga demonul in lista de demoni, toti demonii raporteaza pozitia curenta si se elibereaza zavorul
+                        
+                    \end{itemize}
+                \item \textit{askDemonsForPosition} - functie prin care este afisata pozitia tuturor demonilor existenti in cuibul respectiv
+                    \begin{itemize}
+                        \item blocheaza zavorul matricei cuibului
+                        \item blocheaza zavorul listei de demoni
+                        \item blocheaza zavorul listei de ingrediente
+                        \item este afisata pozitia tuturor demonii din lista de demoni existenti 
+                        \item deblocarea celor 3 zavoare
+                   \end{itemize}
+                \item \textit{getIngredient} - metoda utilizata de vrajitoare pentru a primi ingredientele din cuib
+                \item \textit{createIngredient} - adauga un ingredient in lista de ingrediente
+                \item \textit{retireDemon} - retrage un demon din cuib
+                \item \textit{killDemon} - metoda folosita de strigoi pentru a omora un demon
+                \begin{itemize}
+                    \item asteapta permisiunea semaforului \textit{zombieSemaphore}
+                    \item omora un demon random din cuib
+                    \item blocheaza zavorul listei de ingrediente
+                    \item sterge toate ingredientele existente in cuib
+                    \item deblocheaza cele 2 zavoare
+                
+                  \end{itemize}
+            \end{itemize}
+            \item \textbf{GrandSorcererCircle} - Cercul Marelui Vrajitor
+                \begin{itemize}
+                    \item \textit{nrCovens} - numarul de cuiburi existente
+                    \item \textit{covens} - vector ce contine toate cuiburile existente
+                    \item \textit{spawners} - vector ce contine toate thread-urile spawner
+                    \item \textit{nrTotalDemons} - numarul total de demoni existenti
+                    \item \textit{demonsCounterLock} - zavor pentru numarul total de demoni existenti
+                    \item \textit{witches} - vector ce contine toate vrajitoarele existente
+                    \item \textit{potionQueue} - coada pentru transferul potiunilor de la vrajitoare la Marele Vrajitor
+                    \item \textit{demonfRetireSemaphore} - semafor pentru retragerea demonilor
+                    \item \textit{demonRetire} - thread pentru retragerea unui demon
+                    \item \textit{getDemonsCounterLock} - returneaza zavorul pentru numarul de demoni
+                    \item \textit{createCovens} - creaza toate cuiburile, spawn de demon, vrajitoarele si incepe executia threadurilor.
+                \end{itemize}
+                
+        \end{itemize}
+    
+    
+    
+ \section{\textbf{Implementarea taskurilor}}
+ 
+   \subsection {Metode de sincronizare}
+
+       
+      Pentru rezolvarea problemei si sincronizare am utilizat 3 zavoare:
+            \begin{itemize}
+                \item Un zavor \textit{covenLock} care este folosit pentru accesul la cuib ce este reprezentat printr-o matrice, atunci cand un demon se muta sau raporteaza pozitia(2 demoni nu se pot misca simultan si nu se pot misca cand raporteaza pozitia).
+                \item Un zavor \textit{demonsListLock} care este folosit pentru a controla accesul la lista de demoni(2 demoni nu pot fi adaugati simultan).
+                \item Un zavor \textit{ingredientsLock} care gestioneaza accesul la lista de ingrediente atunci cand un demon este intrebat de pozitia sa(o vrajitoare nu poate primi ingrediente cand demonii raporteaza poxitia), cand vrajitoarele primesc ingrediente din cuiburi(2 vrajitoare nu pot primi acelasi ingredient) sau  cand este creat un nou ingredient(modificarea listei cu ingrediente).
+            \end{itemize}
+        
+        Pentru a sincroniza accesul vrajitoarelor la cuiburi am folosit un semafor \textit{witchSemaphore} cu 10 permisiuni pentru fiecare cuib deoarece maxim 10 vrajitoare pot accesa un cuib in acelasi timp. Acest semafor este incrementat dupa ce o vrajitoare ia un ingredient dintr-un cuib.
+        \\
+        
+        Deoarece demonii pot crea 10 tipuri de de ingrediente diferite, numerotate de la 1 la 10, am utilizat vectori pentru a stoca ingredientele si pentru a le sorta. Astfel,indicele fiecarui element din vector va reprezenta si tipul de ingredient.
+        \\
+        
+        Demonii sunt identificati prin numar, iar pentru evita cazul in care exista 2 demoni cu acelasi numar in cuiburi diferite am utilizat un zavor pentru accesul la lista de demoni.
+        \\
+        
+        Vrajitoarele creaza potiuni dupa o anumita reteta. Tipul de ingredientele necesare, precum si timpul necesar sunt generate random. O reteta este reprezentata de clasa \textit{PotionReceipt}. 
+        \\
+        
+        Dupa ce o potiune este creata, aceasta este transferata catre Marele Vrajitor prin intermediul unei cozi. Metodele pentru punerea si scoaterea elementelor din coada au fost create utilizand metoda synchronized.
+        \\
+        \\
+        \subsection {Sarcini de indeplinit:}
+        \item \textbf{Puteți retrage un demon}
+        \\
+        
+        Pentru retragerea unui demon am creat o noua clasa \textit{DemonRetirement} reprezentata printr-un thread care la fiecare 50 de milisecunde va retrage un demon. Fiecare demon va fi creat intr-un cuib, apoi va incerca sa obtina permisunea de a se retrage. Cand un demon este retras, acesta este sters din matricea cuibului si din lista ce contine toti demonii existenti in cuibul respectiv.
+     
+        \item \textbf{Demoni adormiti - semaphores }\\
+        
+        
+        Cand un demon ajunge pe diagonala principala, acesta va incerca sa primeasca permisiunea semaforului \textit{counterSemaphore} pentru a modifica valoarea contorului \textit{counter} ce indica numarul demonilor ce asteapta la bariera pana cand valoarea variabilei counter este mai mica decat N. (Numarul maxim de demoni dintr-un cuib a fost modficat de la N/2 la N).
+        
+        \item \textbf{Demoni adormiti - cyclic barrier}
+        \\
+        \\
+        Cand un demon ajunge pe diagonala principala, acesta va astepta la bariera pana cand numarul demonilor va ajunge la N, dupa care isi va continua deplasarea in cuib.
+        \\
+        
+        Propria bariera ciclica a fost creata in clasa \textit{CyclicBarrier}. Metoda \textit{await()} foloseste un zavor \textit{counterLock} pentru a modifica variabila contor a demonilor ce asteapta la bariera cat timp counter este mai mic decat N.
+        
+
+\section{\textbf{Observatii: }}
+
+\begin{itemize}
+    \item Pentru ca strigoii sa nu atace prea repede cuiburile iar algoritmul sa dea eroare atunci cand un numar de demoni este omorat, deoarece nu exista atatia demoni in cuib, am decis ca strigoii sa atace doar cand numarul de demoni existenti intr-un cuib este mai mare decat 10. 
+    \item Pentru rezolvarea taskurilor am redus dimensiunea matricelor la 30x30 pentru a se indeplini mai repede conditiile ca toti demonii sa se afle pe diagonala principala.
+    \item Deoarece demonii sunt foarte rapizi in crearea ingredientelor(au nevoie doar de 30 de milisecunde de odihna), vrajitoarele trebuie sa fie si ele foarte rapide in preluarea ingredientelor(vor avea un timp de odihna cuprins intre 10 si 30 de milisecunde).
+    \item Mai multe vrajitoare pot trimite potiuni catre Marele Vrajitor, de aceea acesta nu trebuie sa astepte intre primirea potiunilor(nu are nevoie de odihna).
+    
+\end{itemize}
+\end{document}
